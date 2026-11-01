@@ -2,6 +2,7 @@ import { cn } from '@/shared/lib/cn'
 import { useFieldControl } from './Field'
 
 const COUNTRY_CODE = '+998'
+const COUNTRY_DIGITS = 3
 const SUBSCRIBER_LENGTH = 9
 
 export interface PhoneInputProps {
@@ -21,9 +22,14 @@ export interface PhoneInputProps {
 /** Everything after the country code, capped at the national number length. */
 export function subscriberDigitsOf(raw: string): string {
   const digits = raw.replace(/\D/g, '')
-  // Tolerates every way a number gets pasted: +998901234567, 998901234567,
-  // 901234567 and 8901234567 all mean the same thing here.
-  const withoutCountry = digits.startsWith('998') ? digits.slice(3) : digits
+  // Tolerates every way a number gets pasted: +998901234567, 998901234567
+  // and 901234567 all mean the same thing here. A leading 998 is only the
+  // country code when the input says so (a "+") or is long enough to hold it:
+  // operator codes like 99 make "99-8..." a perfectly normal local number.
+  const hasCountryCode =
+    digits.startsWith('998') &&
+    (raw.trimStart().startsWith('+') || digits.length >= COUNTRY_DIGITS + SUBSCRIBER_LENGTH)
+  const withoutCountry = hasCountryCode ? digits.slice(COUNTRY_DIGITS) : digits
   return withoutCountry.slice(0, SUBSCRIBER_LENGTH)
 }
 
