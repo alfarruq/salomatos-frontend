@@ -1,7 +1,9 @@
+import { useRef } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { useFieldControl } from './Field'
 
 const COUNTRY_CODE = '+998'
+const COUNTRY_DIGITS = 3
 const SUBSCRIBER_LENGTH = 9
 
 export interface PhoneInputProps {
@@ -21,9 +23,14 @@ export interface PhoneInputProps {
 /** Everything after the country code, capped at the national number length. */
 export function subscriberDigitsOf(raw: string): string {
   const digits = raw.replace(/\D/g, '')
-  // Tolerates every way a number gets pasted: +998901234567, 998901234567,
-  // 901234567 and 8901234567 all mean the same thing here.
-  const withoutCountry = digits.startsWith('998') ? digits.slice(3) : digits
+  // Tolerates every way a number gets pasted: +998901234567, 998901234567
+  // and 901234567 all mean the same thing here. A leading 998 is only the
+  // country code when the input says so (a "+") or is long enough to hold it:
+  // operator codes like 99 make "99-8..." a perfectly normal local number.
+  const hasCountryCode =
+    digits.startsWith('998') &&
+    (raw.trimStart().startsWith('+') || digits.length >= COUNTRY_DIGITS + SUBSCRIBER_LENGTH)
+  const withoutCountry = hasCountryCode ? digits.slice(COUNTRY_DIGITS) : digits
   return withoutCountry.slice(0, SUBSCRIBER_LENGTH)
 }
 
@@ -42,6 +49,7 @@ export function PhoneInput({
   className,
 }: PhoneInputProps) {
   const field = useFieldControl()
+  const inputRef = useRef<HTMLInputElement>(null)
   const digits = subscriberDigitsOf(value)
 
   const handleChange = (next: string) => {
@@ -68,11 +76,24 @@ export function PhoneInput({
        * to the editable part, so the whole field reads as one grouped number
        * (`+998-90-123-45-67`) rather than a code next to an unrelated input.
        */}
-      <span aria-hidden="true" className="pl-4 text-body text-text-secondary">
+      {/*
+       * The prefix looks like part of the field, so a click on it has to land
+       * in the input too. preventDefault keeps the input from blurring first;
+       * it is aria-hidden and the input stays the only keyboard stop.
+       */}
+      <span
+        aria-hidden="true"
+        className="cursor-text pl-4 text-body text-text-secondary"
+        onMouseDown={(event) => {
+          event.preventDefault()
+          inputRef.current?.focus()
+        }}
+      >
         {COUNTRY_CODE}-
       </span>
 
       <input
+        ref={inputRef}
         id={id ?? field?.controlId}
         name={name}
         disabled={disabled}
