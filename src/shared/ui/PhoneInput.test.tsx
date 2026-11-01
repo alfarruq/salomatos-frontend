@@ -87,6 +87,14 @@ describe('PhoneInput', () => {
     expect(onChange).toHaveBeenLastCalledWith('+998901234567')
   })
 
+  it('focuses the input when the +998 prefix is clicked', async () => {
+    render(<PhoneInput value="" />)
+
+    await userEvent.click(screen.getByText('+998-'))
+
+    expect(screen.getByRole('textbox')).toHaveFocus()
+  })
+
   it('shows the number grouped but stores it plain', () => {
     render(<PhoneInput value="+998901234567" />)
 

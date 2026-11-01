@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { useFieldControl } from './Field'
 
@@ -48,6 +49,7 @@ export function PhoneInput({
   className,
 }: PhoneInputProps) {
   const field = useFieldControl()
+  const inputRef = useRef<HTMLInputElement>(null)
   const digits = subscriberDigitsOf(value)
 
   const handleChange = (next: string) => {
@@ -74,11 +76,24 @@ export function PhoneInput({
        * to the editable part, so the whole field reads as one grouped number
        * (`+998-90-123-45-67`) rather than a code next to an unrelated input.
        */}
-      <span aria-hidden="true" className="pl-4 text-body text-text-secondary">
+      {/*
+       * The prefix looks like part of the field, so a click on it has to land
+       * in the input too. preventDefault keeps the input from blurring first;
+       * it is aria-hidden and the input stays the only keyboard stop.
+       */}
+      <span
+        aria-hidden="true"
+        className="cursor-text pl-4 text-body text-text-secondary"
+        onMouseDown={(event) => {
+          event.preventDefault()
+          inputRef.current?.focus()
+        }}
+      >
         {COUNTRY_CODE}-
       </span>
 
       <input
+        ref={inputRef}
         id={id ?? field?.controlId}
         name={name}
         disabled={disabled}
