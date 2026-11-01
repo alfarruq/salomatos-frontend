@@ -1,4 +1,5 @@
 import { cn } from '@/shared/lib/cn'
+import { handleMaskedChange } from '@/shared/lib/maskedInput'
 import { useFieldControl } from './Field'
 
 export interface MoneyInputProps {
@@ -42,7 +43,7 @@ export function MoneyInput({
   className,
 }: MoneyInputProps) {
   const field = useFieldControl()
-  const digits = digitsOf(value)
+  const display = formatThousands(digitsOf(value))
 
   return (
     <input
@@ -52,8 +53,12 @@ export function MoneyInput({
       inputMode="numeric"
       autoComplete="off"
       placeholder={placeholder}
-      value={formatThousands(digits)}
-      onChange={(event) => onChange?.(digitsOf(event.target.value))}
+      value={display}
+      onChange={(event) =>
+        onChange?.(
+          digitsOf(handleMaskedChange(event, display, (raw) => formatThousands(digitsOf(raw)))),
+        )
+      }
       aria-describedby={field?.describedBy}
       aria-invalid={field?.isInvalid ?? undefined}
       className={cn(

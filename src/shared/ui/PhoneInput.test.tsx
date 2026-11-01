@@ -44,8 +44,14 @@ describe('formatSubscriber', () => {
  * The component is controlled by design — react-hook-form owns the value in
  * every real use — so typing has to be exercised through a controlling parent.
  */
-function Controlled({ onChange }: { onChange: (value: string) => void }) {
-  const [value, setValue] = useState('')
+function Controlled({
+  onChange,
+  initial = '',
+}: {
+  onChange: (value: string) => void
+  initial?: string
+}) {
+  const [value, setValue] = useState(initial)
   return (
     <PhoneInput
       onChange={(next) => {
@@ -75,6 +81,21 @@ describe('PhoneInput', () => {
 
     expect(onChange).toHaveBeenLastCalledWith('+998998311223')
     expect(screen.getByRole('textbox')).toHaveValue('99-831-12-23')
+  })
+
+  it('replaces a digit in the middle where the caret is, not at the end', async () => {
+    const onChange = vi.fn()
+    render(<Controlled initial="+998997652134" onChange={onChange} />)
+    const input = screen.getByRole<HTMLInputElement>('textbox')
+
+    await userEvent.click(input)
+    // "99-7|65-21-34": swap the 7 for an 8.
+    input.setSelectionRange(4, 4)
+    await userEvent.keyboard('{Backspace}8')
+
+    expect(input).toHaveValue('99-865-21-34')
+    expect(onChange).toHaveBeenLastCalledWith('+998998652134')
+    expect(input.selectionStart).toBe(4)
   })
 
   it('normalises a pasted number that repeats the country code', async () => {

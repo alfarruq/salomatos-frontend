@@ -38,8 +38,14 @@ describe('formatThousands', () => {
  * Controlled by design, like `PhoneInput` — react-hook-form owns the value in
  * every real use.
  */
-function Controlled({ onChange }: { onChange: (value: string) => void }) {
-  const [value, setValue] = useState('')
+function Controlled({
+  onChange,
+  initial = '',
+}: {
+  onChange: (value: string) => void
+  initial?: string
+}) {
+  const [value, setValue] = useState(initial)
   return (
     <MoneyInput
       onChange={(next) => {
@@ -66,6 +72,21 @@ describe('MoneyInput', () => {
 
     expect(onChange).toHaveBeenLastCalledWith('1200000')
     expect(screen.getByRole('textbox')).toHaveValue('1,200,000')
+  })
+
+  it('edits a digit in the middle without throwing the caret to the end', async () => {
+    const onChange = vi.fn()
+    render(<Controlled initial="1200000" onChange={onChange} />)
+    const input = screen.getByRole<HTMLInputElement>('textbox')
+
+    await userEvent.click(input)
+    // "1,2|00,000": swap the 2 for a 5.
+    input.setSelectionRange(3, 3)
+    await userEvent.keyboard('{Backspace}5')
+
+    expect(input).toHaveValue('1,500,000')
+    expect(onChange).toHaveBeenLastCalledWith('1500000')
+    expect(input.selectionStart).toBe(3)
   })
 
   it('ignores a pasted currency word or separator rather than rejecting the amount', async () => {
