@@ -1,3 +1,4 @@
+import { handleMaskedChange } from '@/shared/lib/maskedInput'
 import { Input, type InputProps } from './Input'
 
 export interface DateInputProps
@@ -26,7 +27,7 @@ export function DateInput({ value, onChange, ...props }: DateInputProps) {
       autoComplete="off"
       inputMode="numeric"
       maxLength={10}
-      onChange={(event) => onChange(maskTypedDate(event.target.value))}
+      onChange={(event) => onChange(handleMaskedChange(event, value, maskTypedDate))}
       type="text"
       value={value}
       {...props}

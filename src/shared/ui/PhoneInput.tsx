@@ -1,5 +1,6 @@
-import { useRef } from 'react'
+import { type ChangeEvent, useRef } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { handleMaskedChange } from '@/shared/lib/maskedInput'
 import { useFieldControl } from './Field'
 
 const COUNTRY_CODE = '+998'
@@ -52,8 +53,13 @@ export function PhoneInput({
   const inputRef = useRef<HTMLInputElement>(null)
   const digits = subscriberDigitsOf(value)
 
-  const handleChange = (next: string) => {
-    const nextDigits = subscriberDigitsOf(next)
+  const display = formatSubscriber(digits)
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const next = handleMaskedChange(event, display, (raw) =>
+      formatSubscriber(subscriberDigitsOf(raw)),
+    )
+    const nextDigits = next.replace(/\D/g, '')
     onChange?.(nextDigits.length === 0 ? '' : `${COUNTRY_CODE}${nextDigits}`)
   }
 
@@ -102,8 +108,8 @@ export function PhoneInput({
         inputMode="tel"
         autoComplete="tel-national"
         placeholder="90-123-45-67"
-        value={formatSubscriber(digits)}
-        onChange={(event) => handleChange(event.target.value)}
+        value={display}
+        onChange={handleChange}
         aria-describedby={field?.describedBy}
         aria-invalid={field?.isInvalid ?? undefined}
         className={cn(
