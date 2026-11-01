@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import {
   createFileRoute,
   Link,
@@ -35,6 +36,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   Logo,
+  PullToRefresh,
   Tooltip,
   tabBarItemClassName,
   useSidebarCollapsed,
@@ -100,6 +102,7 @@ export const Route = createFileRoute('/_auth')({
 
 function AuthenticatedLayout() {
   const { t } = useTranslation('common')
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const session = useSession()
   const { mutate: logout, isPending } = useLogout()
@@ -239,6 +242,11 @@ function AuthenticatedLayout() {
         </ul>
       }
     >
+      {/* Re-asks the server for what is on screen; a full reload would also drop form drafts and filters. */}
+      <PullToRefresh
+        label={t('nav.refreshing')}
+        onRefresh={() => queryClient.refetchQueries({ type: 'active' })}
+      />
       <Outlet />
     </AppShell>
   )
