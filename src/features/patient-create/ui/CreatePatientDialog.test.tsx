@@ -28,7 +28,7 @@ afterAll(() => server.close())
  * policy — a component test that fails when the cache configuration changes is
  * testing the wrong thing.
  */
-function renderDialog() {
+function renderDialog({ offerTreatment = false }: { offerTreatment?: boolean } = {}) {
   const onCreated = vi.fn()
   const onOpenChange = vi.fn()
 
@@ -44,6 +44,7 @@ function renderDialog() {
         <Suspense fallback={null}>
           <CreatePatientDialog
             clinicId={1}
+            offerTreatment={offerTreatment}
             onCreated={onCreated}
             onOpenChange={onOpenChange}
             open
@@ -102,6 +103,30 @@ describe('CreatePatientDialog', () => {
 
     await vi.waitFor(() => expect(onCreated).toHaveBeenCalledOnce())
     expect(onOpenChange).toHaveBeenCalledWith(false)
+    expect(onCreated.mock.calls[0]?.[1]).toMatchObject({ addTreatment: false })
+  })
+
+  it('hides the treatment checkbox unless the caller offers it', async () => {
+    renderDialog()
+
+    await screen.findByLabelText('F. I. Sh.')
+    expect(screen.queryByRole('checkbox', { name: "Muolaja qo'shish" })).not.toBeInTheDocument()
+  })
+
+  it('hands the new patient and the chosen doctor on when a treatment is asked for', async () => {
+    const { onCreated } = renderDialog({ offerTreatment: true })
+
+    await userEvent.type(await screen.findByLabelText('F. I. Sh.'), 'Yangi Bemor')
+    await userEvent.type(screen.getByLabelText('Telefon raqami'), '935550022')
+    await userEvent.click(await screen.findByRole('combobox', { name: 'Shifokor' }))
+    await userEvent.click(await screen.findByRole('option', { name: 'Sardor Usmonov' }))
+    await userEvent.click(screen.getByRole('checkbox', { name: "Muolaja qo'shish" }))
+    await userEvent.click(screen.getByRole('button', { name: "Qo'shish va davom etish" }))
+
+    await vi.waitFor(() => expect(onCreated).toHaveBeenCalledOnce())
+    const [patient, followUp] = onCreated.mock.calls[0] ?? []
+    expect(patient).toMatchObject({ id: expect.any(Number) })
+    expect(followUp).toMatchObject({ addTreatment: true, doctorId: expect.any(Number) })
   })
 
   it('puts the server`s rejection on the field that caused it', async () => {

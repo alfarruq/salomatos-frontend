@@ -14,12 +14,13 @@ import { useTranslation } from 'react-i18next'
 import { doctorQueries } from '@/entities/doctor'
 import type { PatientFilters, PatientId, PatientListItem, PatientStatus } from '@/entities/patient'
 import { PatientAvatar, PatientStatusBadge, patientQueries } from '@/entities/patient'
-import { Can } from '@/entities/session'
+import { Can, useCan } from '@/entities/session'
 import { treatmentTypeQueries } from '@/entities/treatment-type'
 import { CreatePatientDialog } from '@/features/patient-create'
 import { DeletePatientDialog } from '@/features/patient-delete'
 import { EditPatientDialog } from '@/features/patient-edit'
 import { PatientSearchInput, usePatientSearch } from '@/features/patient-search'
+import { TreatmentComposer } from '@/features/treatment-composer'
 import { PAGE_SIZE } from '@/shared/api/pagination'
 import { cn } from '@/shared/lib/cn'
 import { formatSom } from '@/shared/lib/money'
@@ -44,6 +45,11 @@ import {
 } from '@/shared/ui'
 import { usePatientColumns } from '../model/usePatientColumns'
 import { PatientSummary } from './PatientSummary'
+
+interface NewPatientTreatment {
+  patientId: PatientId
+  doctorId: number | null
+}
 
 /*
  * Radix's `Select` hardcodes `""` to mean "nothing selected, show the
@@ -86,6 +92,10 @@ export function PatientTable({
   const [editing, setEditing] = useState<PatientListItem | null>(null)
   const [deleting, setDeleting] = useState<PatientListItem | null>(null)
   const [isFiltersOpen, setFiltersOpen] = useState(false)
+  // Set when "add a treatment" was ticked in the new-patient form (§4: the two
+  // features meet here, not inside each other).
+  const [treatmentFor, setTreatmentFor] = useState<NewPatientTreatment | null>(null)
+  const canAddTreatment = useCan('medical-record:write')
 
   const search = usePatientSearch()
   const query = useQuery(
@@ -445,7 +455,31 @@ export function PatientTable({
         )}
       </QueryBoundary>
 
-      <CreatePatientDialog clinicId={clinicId} onOpenChange={setCreateOpen} open={isCreateOpen} />
+      <CreatePatientDialog
+        clinicId={clinicId}
+        offerTreatment={canAddTreatment}
+        onCreated={(patient, followUp) => {
+          if (followUp.addTreatment) {
+            setTreatmentFor({ patientId: patient.id, doctorId: followUp.doctorId })
+          }
+        }}
+        onOpenChange={setCreateOpen}
+        open={isCreateOpen}
+      />
+
+      {treatmentFor === null ? null : (
+        <TreatmentComposer
+          clinicId={clinicId}
+          // A patient created a moment ago has no visits yet.
+          nextVisitNumber={1}
+          onOpenChange={(open) => {
+            if (!open) setTreatmentFor(null)
+          }}
+          open
+          patientId={treatmentFor.patientId}
+          {...(treatmentFor.doctorId === null ? {} : { initialDoctorId: treatmentFor.doctorId })}
+        />
+      )}
 
       {editing === null ? null : (
         <EditPatientDialog

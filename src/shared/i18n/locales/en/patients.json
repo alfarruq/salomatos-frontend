@@ -18,7 +18,9 @@
     "title": "New patient",
     "description": "Name, phone number and doctor are required.",
     "submit": "Add patient",
-    "failed": "Could not add the patient. Please try again."
+    "failed": "Could not add the patient. Please try again.",
+    "addTreatment": "Add a treatment next",
+    "submitAndTreat": "Add and continue"
   },
   "edit": {
     "title": "Edit patient",

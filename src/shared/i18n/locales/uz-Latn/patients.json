@@ -18,7 +18,9 @@
     "title": "Yangi bemor",
     "description": "Ism, telefon raqami va shifokor majburiy.",
     "submit": "Bemor qo'shish",
-    "failed": "Bemorni qo'shib bo'lmadi. Qayta urinib ko'ring."
+    "failed": "Bemorni qo'shib bo'lmadi. Qayta urinib ko'ring.",
+    "addTreatment": "Muolaja qo'shish",
+    "submitAndTreat": "Qo'shish va davom etish"
   },
   "edit": {
     "title": "Bemorni tahrirlash",

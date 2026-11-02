@@ -3,17 +3,23 @@ import { Link } from '@tanstack/react-router'
 import { CalendarPlus, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { defaultPatientFilters, patientQueries } from '@/entities/patient'
-import { Can } from '@/entities/session'
+import { defaultPatientFilters, type PatientId, patientQueries } from '@/entities/patient'
+import { Can, useCan } from '@/entities/session'
 import { CreateAppointmentDialog } from '@/features/appointment-create'
 import { CreatePatientDialog } from '@/features/patient-create'
 import { PatientSearchInput, usePatientSearch } from '@/features/patient-search'
+import { TreatmentComposer } from '@/features/treatment-composer'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui'
 
 /** Below this a search matches half the clinic and helps nobody. */
 const MIN_SEARCH_LENGTH = 2
 const MAX_RESULTS = 5
+
+interface NewPatientTreatment {
+  patientId: PatientId
+  doctorId: number | null
+}
 
 export interface QuickActionsProps {
   clinicId: number
@@ -36,6 +42,10 @@ export function QuickActions({
 }: QuickActionsProps) {
   const { t } = useTranslation('dashboard')
   const [isPatientOpen, setPatientOpen] = useState(false)
+  // Set when "add a treatment" was ticked in the new-patient form (§4: the two
+  // features meet here, not inside each other).
+  const [treatmentFor, setTreatmentFor] = useState<NewPatientTreatment | null>(null)
+  const canAddTreatment = useCan('medical-record:write')
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -70,11 +80,31 @@ export function QuickActions({
           </Button>
           <CreatePatientDialog
             clinicId={clinicId}
+            offerTreatment={canAddTreatment}
+            onCreated={(patient, followUp) => {
+              if (followUp.addTreatment) {
+                setTreatmentFor({ patientId: patient.id, doctorId: followUp.doctorId })
+              }
+            }}
             onOpenChange={setPatientOpen}
             open={isPatientOpen}
           />
         </Can>
       </div>
+
+      {treatmentFor === null ? null : (
+        <TreatmentComposer
+          clinicId={clinicId}
+          // A patient created a moment ago has no visits yet.
+          nextVisitNumber={1}
+          onOpenChange={(open) => {
+            if (!open) setTreatmentFor(null)
+          }}
+          open
+          patientId={treatmentFor.patientId}
+          {...(treatmentFor.doctorId === null ? {} : { initialDoctorId: treatmentFor.doctorId })}
+        />
+      )}
     </div>
   )
 }
