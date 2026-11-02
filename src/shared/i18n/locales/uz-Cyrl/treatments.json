@@ -69,7 +69,11 @@
       "upper": "Юқори жағ",
       "lower": "Пастки жағ",
       "tooth": "Тиш"
-    }
+    },
+    "patientLabel": "Бемор",
+    "patientPlaceholder": "Бемор исмини ёзинг",
+    "patientClear": "Беморни олиб ташлаш",
+    "patientNoResults": "Бундай бемор топилмади"
   },
   "chart": {
     "completed": "Тугалланган",
@@ -83,7 +87,8 @@
     "columnPaid": "Тўланган",
     "empty": "Ҳозирча муолажа йўқ",
     "emptyDescription": "Муолажалар бемор саҳифасида қўшилади.",
-    "summary": "{{count}} тадан {{from}}–{{to}}"
+    "summary": "{{count}} тадан {{from}}–{{to}}",
+    "add": "Муолажа қўшиш"
   },
   "filters": {
     "patientResults": "Топилган беморлар",

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Doctor } from '@/entities/doctor'
 import { doctorQueries } from '@/entities/doctor'
 import { isDentalDoctorType } from '@/entities/doctor-type'
+import { patientQueries } from '@/entities/patient'
 import type { Treatment } from '@/entities/treatment'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { treatmentTypeQueries } from '@/entities/treatment-type'
@@ -12,15 +13,21 @@ import { todayCalendarDate } from '@/shared/lib/calendarDate'
 import { Alert, Button, Dialog, ErrorState, Field, Select, Skeleton, Textarea } from '@/shared/ui'
 import type { ComposerFields, TreatmentRow } from '../model/types'
 import { useSaveTreatments } from '../model/useSaveTreatments'
+import { PatientPicker, type PickedPatient } from './PatientPicker'
 import { ToothPicker } from './ToothPicker'
 import { TreatmentRowsTable } from './TreatmentRowsTable'
 import { TreatmentTypeAdder } from './TreatmentTypeAdder'
 
 export interface TreatmentComposerProps {
   clinicId: number
-  patientId: number
+  /**
+   * Absent shows a patient picker instead — the Treatments page's "add"
+   * button, where no patient is open yet. Then the visit number comes from
+   * the picked patient's card.
+   */
+  patientId?: number
   /** Sent as `visit_number` on every new row — the patient's visit count plus one. */
-  nextVisitNumber: number
+  nextVisitNumber?: number
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Present only when editing an existing treatment. Absent means "create". */
@@ -147,8 +154,8 @@ function TreatmentComposerForm({
   treatmentTypes,
 }: {
   clinicId: number
-  patientId: number
-  nextVisitNumber: number
+  patientId: number | undefined
+  nextVisitNumber: number | undefined
   open: boolean
   onOpenChange: (open: boolean) => void
   initialTreatment: Treatment | undefined
@@ -157,6 +164,17 @@ function TreatmentComposerForm({
 }) {
   const { t } = useTranslation(['treatments', 'patients', 'common'])
   const { mutate, isPending, error } = useSaveTreatments(clinicId)
+
+  const [pickedPatient, setPickedPatient] = useState<PickedPatient | null>(null)
+  const effectivePatientId = patientId ?? pickedPatient?.id ?? null
+  // The list row has no visit count; the card does.
+  const pickedPatientQuery = useQuery({
+    ...patientQueries.detail(clinicId, pickedPatient?.id ?? 0),
+    enabled: patientId === undefined && pickedPatient !== null,
+  })
+  const effectiveVisitNumber =
+    nextVisitNumber ??
+    (pickedPatientQuery.data === undefined ? null : pickedPatientQuery.data.visitNumber + 1)
 
   const [rows, setRows] = useState<TreatmentRow[]>(() =>
     buildInitialRows(initialTreatment, treatmentTypes),
@@ -188,7 +206,11 @@ function TreatmentComposerForm({
   // A new record always needs a real doctor; an edit that only changes an
   // existing row's own fields can leave it alone (see `formSchema.ts`).
   const doctorRequired = !isEditing || hasNewRows
-  const canSave = rows.length > 0 && (!doctorRequired || doctorId !== '')
+  const canSave =
+    rows.length > 0 &&
+    (!doctorRequired || doctorId !== '') &&
+    effectivePatientId !== null &&
+    effectiveVisitNumber !== null
 
   const doctorOptions = doctors.map((doctor) => ({
     value: String(doctor.id),
@@ -236,21 +258,23 @@ function TreatmentComposerForm({
     setRows((current) => current.filter((row) => row.rowId !== rowId))
   }
 
-  const errorMessage =
-    error === null || error === undefined
+  const errorMessage = pickedPatientQuery.isError
+    ? t('common:error.pageBody')
+    : error === null || error === undefined
       ? null
       : error instanceof ApiError && error.kind === 'network'
         ? t('common:error.network')
         : t('treatments:composer.saveFailed')
 
   function handleSave() {
+    if (effectivePatientId === null || effectiveVisitNumber === null) return
     mutate(
       {
-        patientId,
+        patientId: effectivePatientId,
         rows,
         fields: { doctorId, notes } satisfies ComposerFields,
         startDate: initialTreatment?.startDate ?? todayCalendarDate(),
-        visitNumber: nextVisitNumber,
+        visitNumber: effectiveVisitNumber,
         touched: { doctor: doctorTouched, treatmentType: existingRowTypeTouched },
       },
       { onSuccess: () => onOpenChange(false) },
@@ -281,6 +305,15 @@ function TreatmentComposerForm({
             Two columns only from `lg`: below that the chart needs the full width. */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <div className="flex flex-col gap-4">
+            {patientId === undefined ? (
+              <PatientPicker
+                clinicId={clinicId}
+                isDisabled={isPending}
+                onChange={setPickedPatient}
+                value={pickedPatient}
+              />
+            ) : null}
+
             <Field isRequired={doctorRequired} label={t('treatments:composer.doctorLabel')}>
               <Select
                 onValueChange={handleDoctorChange}

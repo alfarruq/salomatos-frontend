@@ -69,7 +69,11 @@
       "upper": "Yuqori jag'",
       "lower": "Pastki jag'",
       "tooth": "Tish"
-    }
+    },
+    "patientLabel": "Bemor",
+    "patientPlaceholder": "Bemor ismini yozing",
+    "patientClear": "Bemorni olib tashlash",
+    "patientNoResults": "Bunday bemor topilmadi"
   },
   "chart": {
     "completed": "Tugallangan",
@@ -83,7 +87,8 @@
     "columnPaid": "To'langan",
     "empty": "Hozircha muolaja yo'q",
     "emptyDescription": "Muolajalar bemor sahifasida qo'shiladi.",
-    "summary": "{{count}} tadan {{from}}–{{to}}"
+    "summary": "{{count}} tadan {{from}}–{{to}}",
+    "add": "Muolaja qo'shish"
   },
   "filters": {
     "patientResults": "Topilgan bemorlar",
