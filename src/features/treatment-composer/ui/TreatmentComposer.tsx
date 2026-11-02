@@ -25,6 +25,8 @@ export interface TreatmentComposerProps {
   onOpenChange: (open: boolean) => void
   /** Present only when editing an existing treatment. Absent means "create". */
   initialTreatment?: Treatment
+  /** Preselected on create, e.g. the doctor just assigned in the new-patient form. Ignored on edit. */
+  initialDoctorId?: number
 }
 
 let rowIdCounter = 0
@@ -48,6 +50,7 @@ export function TreatmentComposer({
   open,
   onOpenChange,
   initialTreatment,
+  initialDoctorId,
 }: TreatmentComposerProps) {
   const { t } = useTranslation(['treatments', 'common'])
 
@@ -85,6 +88,7 @@ export function TreatmentComposer({
     <TreatmentComposerForm
       clinicId={clinicId}
       doctors={doctorsQuery.data}
+      initialDoctorId={initialDoctorId}
       initialTreatment={initialTreatment}
       nextVisitNumber={nextVisitNumber}
       onOpenChange={onOpenChange}
@@ -143,6 +147,7 @@ function TreatmentComposerForm({
   open,
   onOpenChange,
   initialTreatment,
+  initialDoctorId,
   doctors,
   treatmentTypes,
 }: {
@@ -152,6 +157,7 @@ function TreatmentComposerForm({
   open: boolean
   onOpenChange: (open: boolean) => void
   initialTreatment: Treatment | undefined
+  initialDoctorId: number | undefined
   doctors: Doctor[]
   treatmentTypes: TreatmentType[]
 }) {
@@ -162,7 +168,10 @@ function TreatmentComposerForm({
     buildInitialRows(initialTreatment, treatmentTypes),
   )
   const [doctorId, setDoctorId] = useState(() => {
-    if (initialTreatment === undefined) return ''
+    if (initialTreatment === undefined) {
+      // Only a doctor still on the list: a stale id would leave the select blank but "set".
+      return doctors.some((doctor) => doctor.id === initialDoctorId) ? String(initialDoctorId) : ''
+    }
     return String(
       doctors.find((doctor) => doctor.fullName === initialTreatment.doctorName)?.id ?? '',
     )
