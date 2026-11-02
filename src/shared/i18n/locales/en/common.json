@@ -14,7 +14,9 @@
     "next": "Next",
     "previous": "Previous",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "nav": {
     "skipToContent": "Skip to content",

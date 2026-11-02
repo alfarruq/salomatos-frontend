@@ -14,7 +14,9 @@
     "next": "Keyingi",
     "previous": "Oldingi",
     "edit": "Tahrirlash",
-    "delete": "O'chirish"
+    "delete": "O'chirish",
+    "showPassword": "Parolni ko'rsatish",
+    "hidePassword": "Parolni yashirish"
   },
   "nav": {
     "skipToContent": "Asosiy qismga o'tish",

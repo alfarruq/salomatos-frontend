@@ -14,7 +14,9 @@
     "next": "Кейинги",
     "previous": "Олдинги",
     "edit": "Таҳрирлаш",
-    "delete": "Ўчириш"
+    "delete": "Ўчириш",
+    "showPassword": "Паролни кўрсатиш",
+    "hidePassword": "Паролни яшириш"
   },
   "nav": {
     "skipToContent": "Асосий қисмга ўтиш",

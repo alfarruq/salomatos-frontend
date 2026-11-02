@@ -1,6 +1,6 @@
 import { Controller, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { Field, Input, PhoneInput } from '@/shared/ui'
+import { Field, Input, PasswordInput, PhoneInput } from '@/shared/ui'
 import type { AdministratorFormInput } from '../model/formSchema'
 
 export interface AdministratorFormFieldsProps {
@@ -76,10 +76,11 @@ export function AdministratorFormFields({
         label={t('admin:administrator.password')}
       >
         {/* `new-password` stops the browser from filling in the superadmin's own login. */}
-        <Input
+        <PasswordInput
           autoComplete="new-password"
           disabled={isDisabled}
-          type="password"
+          hideLabel={t('common:action.hidePassword')}
+          showLabel={t('common:action.showPassword')}
           {...form.register('password')}
         />
       </Field>

@@ -14,7 +14,9 @@
     "next": "Вперёд",
     "previous": "Назад",
     "edit": "Изменить",
-    "delete": "Удалить"
+    "delete": "Удалить",
+    "showPassword": "Показать пароль",
+    "hidePassword": "Скрыть пароль"
   },
   "nav": {
     "skipToContent": "Перейти к содержимому",

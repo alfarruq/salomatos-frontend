@@ -1,6 +1,6 @@
 import { Controller, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
-import { Field, Input, PhoneInput, Select, type SelectOption } from '@/shared/ui'
+import { Field, Input, PasswordInput, PhoneInput, Select, type SelectOption } from '@/shared/ui'
 import type { DoctorFormInput } from '../model/formSchema'
 
 export interface DoctorFormFieldsProps {
@@ -112,10 +112,11 @@ export function DoctorFormFields({
         label={mode === 'create' ? t('admin:doctor.password') : t('admin:doctor.newPassword')}
       >
         {/* `new-password` stops the browser from filling in the superadmin's own login. */}
-        <Input
+        <PasswordInput
           autoComplete="new-password"
           disabled={isDisabled}
-          type="password"
+          hideLabel={t('common:action.hidePassword')}
+          showLabel={t('common:action.showPassword')}
           {...form.register('password')}
         />
       </Field>
