@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { permissionsForRole, useSessionStore } from '@/entities/session'
 import { accessTokenFor } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
@@ -16,6 +17,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
   clearAccessToken()
+  useSessionStore.getState().clear()
 })
 afterAll(() => server.close())
 
@@ -104,6 +106,24 @@ describe('CreatePatientDialog', () => {
     await vi.waitFor(() => expect(onCreated).toHaveBeenCalledOnce())
     expect(onOpenChange).toHaveBeenCalledWith(false)
     expect(onCreated.mock.calls[0]?.[1]).toMatchObject({ addTreatment: false })
+  })
+
+  it('lets a doctor register a patient for themselves only', async () => {
+    useSessionStore.getState().setSession({
+      userId: 2,
+      clinicId: 2,
+      fullName: 'Sardor Usmonov',
+      phoneNumber: null,
+      email: null,
+      role: 'doctor',
+      permissions: permissionsForRole('doctor'),
+    })
+    renderDialog()
+
+    await userEvent.click(await screen.findByRole('combobox', { name: 'Shifokor' }))
+
+    expect(await screen.findByRole('option', { name: 'Sardor Usmonov' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Malika Yusupova' })).not.toBeInTheDocument()
   })
 
   it('hides the treatment checkbox unless the caller offers it', async () => {

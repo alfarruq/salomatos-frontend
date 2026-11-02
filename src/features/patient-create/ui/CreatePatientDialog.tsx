@@ -12,6 +12,7 @@ import {
   patientFormFieldOf,
   patientFormSchema,
 } from '@/entities/patient'
+import { useSessionStore } from '@/entities/session'
 import { ApiError } from '@/shared/api/errors'
 import { toTypedDate } from '@/shared/lib/calendarDate'
 import { clinicNow } from '@/shared/lib/datetime'
@@ -91,8 +92,23 @@ export function CreatePatientDialog({
 
   const { mutate, isPending } = useCreatePatient(clinicId)
 
+  /*
+   * A doctor registers patients for themselves only (product decision
+   * 2026-11-02), so the list shrinks to their own row and starts on it. A
+   * doctor's id is their user id. UX only — the backend must enforce it.
+   */
+  const session = useSessionStore((state) => state.session)
+  const ownDoctorId = session?.role === 'doctor' ? session.userId : null
+
+  useEffect(() => {
+    if (open && ownDoctorId !== null) form.setValue('doctorId', String(ownDoctorId))
+  }, [open, ownDoctorId, form])
+
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
-  const doctorOptions = (doctorsQuery.data ?? []).map((doctor) => ({
+  const selectableDoctors = (doctorsQuery.data ?? []).filter(
+    (doctor) => ownDoctorId === null || doctor.id === ownDoctorId,
+  )
+  const doctorOptions = selectableDoctors.map((doctor) => ({
     value: String(doctor.id),
     label: doctor.fullName,
   }))

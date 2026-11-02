@@ -24,6 +24,7 @@ import type { Permission, Role } from './types'
  */
 const ALL_PERMISSIONS: readonly Permission[] = [
   'patient:read',
+  'patient:create',
   'patient:write',
   'patient:archive',
   'appointment:read',
@@ -41,18 +42,17 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   /** The clinic account itself. Owns everything under it. */
   superadmin: ALL_PERMISSIONS,
 
-  /**
-   * Reception and clinic management. Reads records to run the desk but does
-   * not write them — a receptionist amending a clinical note is not a
-   * workflow anyone asked for.
-   */
+  /** Reception and clinic management. Runs the desk, treatments included. */
   admin: [
     'patient:read',
+    'patient:create',
     'patient:write',
     'patient:archive',
     'appointment:read',
     'appointment:write',
     'medical-record:read',
+    // Product decision 2026-11-02: the desk records treatments for any doctor.
+    'medical-record:write',
     'billing:read',
     'billing:write',
     'staff:manage',
@@ -61,6 +61,8 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   /** Clinical work. No billing, no archiving, no staff administration. */
   doctor: [
     'patient:read',
+    // Own patients only: the create dialog offers no doctor but themselves.
+    'patient:create',
     'appointment:read',
     'appointment:write',
     'medical-record:read',

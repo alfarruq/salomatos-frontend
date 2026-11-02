@@ -39,7 +39,7 @@ function signIn() {
     phoneNumber: null,
     email: null,
     role: 'superadmin',
-    permissions: new Set(['patient:read', 'patient:write']),
+    permissions: new Set(['patient:read', 'patient:create', 'patient:write']),
   })
 }
 

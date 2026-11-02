@@ -9,6 +9,8 @@
  */
 export type Permission =
   | 'patient:read'
+  /** Registering a new patient. Doctors may, but only for themselves (see `CreatePatientDialog`). */
+  | 'patient:create'
   | 'patient:write'
   | 'patient:archive'
   | 'appointment:read'

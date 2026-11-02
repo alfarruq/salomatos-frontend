@@ -5,6 +5,7 @@ import type { Doctor } from '@/entities/doctor'
 import { doctorQueries } from '@/entities/doctor'
 import { isDentalDoctorType } from '@/entities/doctor-type'
 import { patientQueries } from '@/entities/patient'
+import { useSessionStore } from '@/entities/session'
 import type { Treatment } from '@/entities/treatment'
 import type { TreatmentType } from '@/entities/treatment-type'
 import { treatmentTypeQueries } from '@/entities/treatment-type'
@@ -64,6 +65,14 @@ export function TreatmentComposer({
   const doctorsQuery = useQuery(doctorQueries.list(clinicId))
   const treatmentTypesQuery = useQuery(treatmentTypeQueries.list(clinicId))
 
+  /*
+   * A doctor records treatments as themselves only (product decision
+   * 2026-11-02): the select holds their own row and starts on it. A doctor's
+   * id is their user id. UX only — the backend must enforce it.
+   */
+  const session = useSessionStore((state) => state.session)
+  const ownDoctorId = session?.role === 'doctor' ? session.userId : null
+
   if (doctorsQuery.isPending || treatmentTypesQuery.isPending) {
     return (
       <Dialog
@@ -94,8 +103,12 @@ export function TreatmentComposer({
   return (
     <TreatmentComposerForm
       clinicId={clinicId}
-      doctors={doctorsQuery.data}
-      initialDoctorId={initialDoctorId}
+      doctors={
+        ownDoctorId === null
+          ? doctorsQuery.data
+          : doctorsQuery.data.filter((doctor) => doctor.id === ownDoctorId)
+      }
+      initialDoctorId={ownDoctorId ?? initialDoctorId}
       initialTreatment={initialTreatment}
       nextVisitNumber={nextVisitNumber}
       onOpenChange={onOpenChange}
