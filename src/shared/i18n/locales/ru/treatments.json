@@ -69,7 +69,11 @@
       "upper": "Верхняя челюсть",
       "lower": "Нижняя челюсть",
       "tooth": "Зуб"
-    }
+    },
+    "patientLabel": "Пациент",
+    "patientPlaceholder": "Введите имя пациента",
+    "patientClear": "Убрать пациента",
+    "patientNoResults": "Пациент не найден"
   },
   "chart": {
     "completed": "Завершено",
@@ -83,7 +87,8 @@
     "columnPaid": "Оплачено",
     "empty": "Пока нет лечений",
     "emptyDescription": "Лечение добавляется на странице пациента.",
-    "summary": "{{from}}–{{to}} из {{count}}"
+    "summary": "{{from}}–{{to}} из {{count}}",
+    "add": "Добавить лечение"
   },
   "filters": {
     "patientResults": "Найденные пациенты",

@@ -1,7 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Plus } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import * as v from 'valibot'
+import { Can } from '@/entities/session'
 import type { TreatmentListFilters } from '@/entities/treatment'
+import { TreatmentComposer } from '@/features/treatment-composer'
+import { Button } from '@/shared/ui'
 import { TreatmentTable } from '@/widgets/treatment-table'
 
 const positiveId = v.optional(v.pipe(v.number(), v.integer(), v.minValue(1)))
@@ -35,6 +40,9 @@ function TreatmentsPage() {
   const { clinicId } = Route.useRouteContext()
   const search = Route.useSearch()
   const navigate = useNavigate()
+  const [isComposerOpen, setComposerOpen] = useState(false)
+  // A fresh key per opening, so the dialog never reopens on the last patient's rows.
+  const [composerSession, setComposerSession] = useState(0)
 
   const filters: TreatmentListFilters = {
     page: search.page ?? 1,
@@ -47,7 +55,30 @@ function TreatmentsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-title1 text-text">{t('list.title')}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-title1 text-text">{t('list.title')}</h1>
+        {/* UX only — Django decides who may actually write a treatment (§9.1). */}
+        <Can permission="medical-record:write">
+          <Button
+            iconLeft={<Plus aria-hidden="true" className="size-4" />}
+            onClick={() => {
+              setComposerSession((session) => session + 1)
+              setComposerOpen(true)
+            }}
+            size="sm"
+            variant="primary"
+          >
+            {t('list.add')}
+          </Button>
+        </Can>
+      </div>
+
+      <TreatmentComposer
+        clinicId={clinicId}
+        key={composerSession}
+        onOpenChange={setComposerOpen}
+        open={isComposerOpen}
+      />
 
       <TreatmentTable
         clinicId={clinicId}

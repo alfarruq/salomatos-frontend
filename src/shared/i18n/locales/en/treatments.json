@@ -69,7 +69,11 @@
       "upper": "Upper jaw",
       "lower": "Lower jaw",
       "tooth": "Tooth"
-    }
+    },
+    "patientLabel": "Patient",
+    "patientPlaceholder": "Type the patient's name",
+    "patientClear": "Remove patient",
+    "patientNoResults": "No patient found"
   },
   "chart": {
     "completed": "Completed",
@@ -83,7 +87,8 @@
     "columnPaid": "Paid",
     "empty": "No treatments yet",
     "emptyDescription": "Treatments are added on a patient's page.",
-    "summary": "{{from}}–{{to}} of {{count}}"
+    "summary": "{{from}}–{{to}} of {{count}}",
+    "add": "Add treatment"
   },
   "filters": {
     "patientResults": "Matching patients",

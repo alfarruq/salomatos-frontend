@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
@@ -31,7 +31,7 @@ const ORTHODONTIST = {
   doctor_type: 'Ortodont',
 }
 
-function renderComposer() {
+function renderComposer(props: { patientId?: number } = { patientId: 101 }) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
@@ -40,13 +40,17 @@ function renderComposer() {
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={createI18n('uz-Latn')}>
         <Suspense fallback={null}>
-          <TreatmentComposer
-            clinicId={MOCK_USERS.clinic.id}
-            nextVisitNumber={4}
-            onOpenChange={vi.fn()}
-            open
-            patientId={101}
-          />
+          {props.patientId === undefined ? (
+            <TreatmentComposer clinicId={MOCK_USERS.clinic.id} onOpenChange={vi.fn()} open />
+          ) : (
+            <TreatmentComposer
+              clinicId={MOCK_USERS.clinic.id}
+              nextVisitNumber={4}
+              onOpenChange={vi.fn()}
+              open
+              patientId={props.patientId}
+            />
+          )}
         </Suspense>
       </I18nextProvider>
     </QueryClientProvider>,
@@ -150,5 +154,35 @@ describe('TreatmentComposer', () => {
         "Bu shifokorga mutaxassislik (shifokor turi) biriktirilmagan. Davolash turlarini ko'rish uchun avval unga tur belgilang.",
       ),
     ).toBeInTheDocument()
+  })
+
+  it('finds the patient by name when opened without one, and saves for them', async () => {
+    let posted: unknown = null
+    server.use(
+      http.post('/api/v1/clinic/treatments/', async ({ request }) => {
+        posted = await request.json()
+        return HttpResponse.json([])
+      }),
+    )
+    renderComposer({})
+
+    const save = await screen.findByRole('button', { name: 'Saqlash' }, { timeout: 5000 })
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Bemor' }), 'vali')
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Vali Aliyev/ }, { timeout: 5000 }),
+    )
+
+    await chooseDoctor('Aziz Karimov')
+    await userEvent.click(screen.getByRole('combobox', { name: "Davolash turini qo'shish" }))
+    await userEvent.click(await screen.findByRole('option', { name: 'Tozalash' }))
+
+    await waitFor(() => expect(save).toBeEnabled(), { timeout: 5000 })
+    await userEvent.click(save)
+
+    // Visit number comes from the picked patient's card (3 visits so far).
+    await waitFor(
+      () => expect(posted).toEqual([expect.objectContaining({ patient: 101, visit_number: 4 })]),
+      { timeout: 5000 },
+    )
   })
 })
