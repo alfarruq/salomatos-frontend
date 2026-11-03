@@ -27,4 +27,20 @@ describe('toAppointmentPayload', () => {
     expect(payload).not.toHaveProperty('treatment_type')
     expect(payload).not.toHaveProperty('tooth_number')
   })
+
+  it('sends a linked patient by id only, so the backend cannot match by a shared phone', () => {
+    const payload = toAppointmentPayload({ ...BASE, patientId: '42' })
+
+    expect(payload).toMatchObject({ patient: 42, full_name: null, phone_number: null })
+  })
+
+  it('sends name and phone for a walk-in', () => {
+    const payload = toAppointmentPayload(BASE)
+
+    expect(payload).toMatchObject({
+      patient: null,
+      full_name: 'Vali Aliyev',
+      phone_number: '+998901234567',
+    })
+  })
 })

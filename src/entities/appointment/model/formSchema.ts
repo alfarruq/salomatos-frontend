@@ -9,9 +9,11 @@ import type { Appointment, AppointmentStatus } from './types'
  * definition without importing each other (§4) — same reasoning as
  * `entities/patient/model/formSchema.ts`.
  *
- * `fullName`/`phoneNumber` are always sent, walk-in or not: the backend
- * accepts them alongside an optional `patient` id, so picking an existing
- * patient only pre-fills these rather than replacing them.
+ * `fullName`/`phoneNumber` are sent only for a walk-in. When both are present
+ * the backend ignores the `patient` id and looks the patient up by phone with
+ * `get_or_create`, which crashes with a 500 when several patients share that
+ * phone (allowed by design, e.g. mother and child) and can attach the booking
+ * to the wrong record. A linked patient therefore goes by id alone.
  */
 
 /** Matches `entities/patient/model/formSchema.ts` — the same phone shape. */
@@ -83,10 +85,11 @@ export function toAppointmentForm(appointment: Appointment): AppointmentFormInpu
 export function toAppointmentPayload(
   input: AppointmentFormInput,
 ): Record<string, string | number | null> {
+  const isWalkIn = input.patientId === ''
   return {
-    full_name: input.fullName,
-    phone_number: input.phoneNumber,
-    patient: input.patientId === '' ? null : Number(input.patientId),
+    full_name: isWalkIn ? input.fullName : null,
+    phone_number: isWalkIn ? input.phoneNumber : null,
+    patient: isWalkIn ? null : Number(input.patientId),
     doctor: input.doctorId === '' ? null : Number(input.doctorId),
     date: input.date,
     time: input.time,
