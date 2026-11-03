@@ -77,7 +77,17 @@ function signedIn(user: keyof typeof MOCK_USERS = 'clinic') {
   useSessionStore.getState().setUsername(MOCK_USERS[user].username)
 }
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeAll(async () => {
+  server.listen({ onUnhandledRequest: 'error' })
+  // autoCodeSplitting makes the signed-in shell and the dashboard lazy chunks.
+  // Run on its own, this file pays for transforming them on the first
+  // navigation (past findBy's 1s default), so load them up front and keep the
+  // tests about routing rather than transform speed.
+  const warm = createRouter({ routeTree, context: { queryClient: createQueryClient() } })
+  await Promise.all(
+    (['/_auth', '/_auth/dashboard'] as const).map((id) => warm.loadRouteChunk(warm.routesById[id])),
+  )
+})
 afterEach(() => {
   server.resetHandlers()
   resetApiContext()
