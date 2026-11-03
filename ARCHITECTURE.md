@@ -1279,7 +1279,7 @@ Sentry.init({
 
 ```ts
 // shared/lib/useIdleTimer.ts
-export const IDLE_TIMEOUT_MS = 12 * 60 * 1000   // 12 daqiqa
+export const IDLE_TIMEOUT_MS = 30 * 60 * 1000   // 30 daqiqa
 export const IDLE_WARNING_MS = 60 * 1000        // 1 daqiqa oldin ogohlantirish
 ```
 
