@@ -5,6 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { Suspense } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { permissionsForRole, useSessionStore } from '@/entities/session'
 import { accessTokenFor, MOCK_DOCTORS, MOCK_USERS } from '@/shared/api/mocks/fixtures'
 import { server } from '@/shared/api/mocks/server'
 import { clearAccessToken, setAccessToken } from '@/shared/api/tokenStore'
@@ -15,6 +16,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
   server.resetHandlers()
   clearAccessToken()
+  useSessionStore.getState().clear()
 })
 afterAll(() => server.close())
 
@@ -71,6 +73,24 @@ describe('TreatmentComposer', () => {
     server.use(
       http.get('/api/v1/clinic/doctors/', () => HttpResponse.json([...MOCK_DOCTORS, ORTHODONTIST])),
     )
+  })
+
+  it('starts a doctor on themselves and offers no one else', async () => {
+    useSessionStore.getState().setSession({
+      userId: 2,
+      clinicId: 2,
+      fullName: 'Sardor Usmonov',
+      phoneNumber: null,
+      email: null,
+      role: 'doctor',
+      permissions: permissionsForRole('doctor'),
+    })
+    renderComposer()
+
+    const select = await screen.findByRole('combobox', { name: 'Shifokor' }, { timeout: 5000 })
+    expect(select).toHaveTextContent('Sardor Usmonov')
+    await userEvent.click(select)
+    expect(screen.queryByRole('option', { name: 'Aziz Karimov' })).not.toBeInTheDocument()
   })
 
   it('waits for a doctor before offering any treatment', async () => {

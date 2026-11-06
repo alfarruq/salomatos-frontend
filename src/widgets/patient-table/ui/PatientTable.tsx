@@ -194,7 +194,7 @@ export function PatientTable({
         <div className="flex items-center justify-between gap-3">
           {heading}
           {/* UX only — Django decides what may actually be created (§9.1). */}
-          <Can permission="patient:write">
+          <Can permission="patient:create">
             <Button
               iconLeft={<Plus aria-hidden="true" className="size-4" />}
               onClick={() => setCreateOpen(true)}
@@ -350,7 +350,7 @@ export function PatientTable({
       )}
 
       {isPhone ? (
-        <Can permission="patient:write">
+        <Can permission="patient:create">
           <Button
             iconLeft={<UserPlus aria-hidden="true" className="size-4" />}
             isFloatingOnPhone
@@ -375,7 +375,7 @@ export function PatientTable({
              */
             action={
               search.debouncedTerm === '' ? (
-                <Can permission="patient:write">
+                <Can permission="patient:create">
                   <Button onClick={() => setCreateOpen(true)} variant="primary">
                     {t('patients:create.submit')}
                   </Button>

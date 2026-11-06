@@ -70,7 +70,7 @@ export function QuickActions({
             open={isAppointmentOpen}
           />
         </Can>
-        <Can permission="patient:write">
+        <Can permission="patient:create">
           <Button
             iconLeft={<UserPlus aria-hidden="true" className="size-4" />}
             onClick={() => setPatientOpen(true)}
