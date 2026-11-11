@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
-/** §13.4. Twelve minutes is short because the screen it protects is in a public room. */
-export const IDLE_TIMEOUT_MS = 12 * 60 * 1000
+/** §13.4. Thirty minutes: shorter locked staff out mid-shift too often, and the lock still covers a desk left open. */
+export const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 
 /** How long before the timeout the user is warned. */
 export const IDLE_WARNING_MS = 60 * 1000
