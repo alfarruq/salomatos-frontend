@@ -25,6 +25,8 @@
     "previousMonth": "Олдинги ой",
     "nextMonth": "Кейинги ой",
     "time": "Вақт",
+    "timeManual": "Вақтни қўлда киритинг, масалан 16:20",
+    "timePlaceholder": "сс:дд",
     "status": "Ҳолати",
     "notes": "Изоҳ"
   },
