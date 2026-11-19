@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { useId } from 'react'
 import { Controller, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import {
@@ -26,6 +27,30 @@ const APPOINTMENT_TIME_OPTIONS: SelectOption[] = (() => {
   }
   return options
 })()
+
+/**
+ * The slot list plus the current value when it was typed off-grid (e.g.
+ * 16:20), so the select still shows the chosen time instead of falling back
+ * to its placeholder.
+ */
+function timeOptionsWith(value: string): SelectOption[] {
+  if (!/^\d{2}:\d{2}$/.test(value)) return APPOINTMENT_TIME_OPTIONS
+  if (APPOINTMENT_TIME_OPTIONS.some((option) => option.value === value)) {
+    return APPOINTMENT_TIME_OPTIONS
+  }
+  return [...APPOINTMENT_TIME_OPTIONS, { value, label: value }].sort((a, b) =>
+    a.value.localeCompare(b.value),
+  )
+}
+
+/**
+ * Keeps digits only and puts the colon in by itself, so "1620" and "16:20"
+ * both read as 16:20. The schema still validates the result as HH:MM.
+ */
+function formatTypedTime(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 4)
+  return digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits
+}
 
 /** FDI numbers in chart order — upper arch right to left, then lower. */
 const TOOTH_OPTIONS: SelectOption[] = TEETH.map((tooth) => ({ value: tooth.fdi, label: tooth.fdi }))
@@ -94,6 +119,7 @@ export function AppointmentFormFields({
   }
 
   const errors = form.formState.errors
+  const timeInputId = useId()
 
   return (
     <div className="flex flex-col gap-4">
@@ -289,14 +315,31 @@ export function AppointmentFormFields({
             control={form.control}
             name="time"
             render={({ field }) => (
-              <Select
-                disabled={isDisabled}
-                name={field.name}
-                onValueChange={field.onChange}
-                options={APPOINTMENT_TIME_OPTIONS}
-                placeholder={t('appointments:form.time')}
-                value={field.value}
-              />
+              // The select offers the 30-minute grid; the input below lets the
+              // minutes be typed when the visit does not fall on a slot.
+              <div className="flex flex-col gap-2">
+                <Select
+                  disabled={isDisabled}
+                  name={field.name}
+                  onValueChange={field.onChange}
+                  options={timeOptionsWith(field.value)}
+                  placeholder={t('appointments:form.time')}
+                  value={field.value}
+                />
+                <Input
+                  aria-label={t('appointments:form.timeManual')}
+                  autoComplete="off"
+                  disabled={isDisabled}
+                  id={timeInputId}
+                  inputMode="numeric"
+                  maxLength={5}
+                  onBlur={field.onBlur}
+                  onChange={(event) => field.onChange(formatTypedTime(event.target.value))}
+                  placeholder={t('appointments:form.timePlaceholder')}
+                  ref={field.ref}
+                  value={field.value}
+                />
+              </div>
             )}
           />
         </Field>
