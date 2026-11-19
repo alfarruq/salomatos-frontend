@@ -25,7 +25,7 @@
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "time": "Time",
-    "timeManual": "Type the time, e.g. 16:20",
+    "timeSlots": "Choose from time slots",
     "timePlaceholder": "hh:mm",
     "status": "Status",
     "notes": "Notes"

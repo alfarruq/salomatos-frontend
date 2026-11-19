@@ -25,7 +25,7 @@
     "previousMonth": "Oldingi oy",
     "nextMonth": "Keyingi oy",
     "time": "Vaqt",
-    "timeManual": "Vaqtni qo'lda kiriting, masalan 16:20",
+    "timeSlots": "Vaqtni ro'yxatdan tanlash",
     "timePlaceholder": "ss:dd",
     "status": "Holati",
     "notes": "Izoh"

@@ -1,5 +1,5 @@
-import { X } from 'lucide-react'
-import { useId } from 'react'
+import { Clock, X } from 'lucide-react'
+import { useState } from 'react'
 import { Controller, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import {
@@ -8,6 +8,7 @@ import {
   Field,
   Input,
   PhoneInput,
+  Popover,
   Select,
   type SelectOption,
   TEETH,
@@ -27,21 +28,6 @@ const APPOINTMENT_TIME_OPTIONS: SelectOption[] = (() => {
   }
   return options
 })()
-
-/**
- * The slot list plus the current value when it was typed off-grid (e.g.
- * 16:20), so the select still shows the chosen time instead of falling back
- * to its placeholder.
- */
-function timeOptionsWith(value: string): SelectOption[] {
-  if (!/^\d{2}:\d{2}$/.test(value)) return APPOINTMENT_TIME_OPTIONS
-  if (APPOINTMENT_TIME_OPTIONS.some((option) => option.value === value)) {
-    return APPOINTMENT_TIME_OPTIONS
-  }
-  return [...APPOINTMENT_TIME_OPTIONS, { value, label: value }].sort((a, b) =>
-    a.value.localeCompare(b.value),
-  )
-}
 
 /**
  * Keeps digits only and puts the colon in by itself, so "1620" and "16:20"
@@ -119,7 +105,7 @@ export function AppointmentFormFields({
   }
 
   const errors = form.formState.errors
-  const timeInputId = useId()
+  const [isTimeListOpen, setTimeListOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-4">
@@ -315,30 +301,55 @@ export function AppointmentFormFields({
             control={form.control}
             name="time"
             render={({ field }) => (
-              // The select offers the 30-minute grid; the input below lets the
-              // minutes be typed when the visit does not fall on a slot.
-              <div className="flex flex-col gap-2">
-                <Select
-                  disabled={isDisabled}
-                  name={field.name}
-                  onValueChange={field.onChange}
-                  options={timeOptionsWith(field.value)}
-                  placeholder={t('appointments:form.time')}
-                  value={field.value}
-                />
+              // One field: the time is typed (e.g. 16:20), and the clock button
+              // offers the 30-minute slots as a shortcut into the same value.
+              <div className="relative">
                 <Input
-                  aria-label={t('appointments:form.timeManual')}
                   autoComplete="off"
+                  className="pr-12"
                   disabled={isDisabled}
-                  id={timeInputId}
                   inputMode="numeric"
                   maxLength={5}
+                  name={field.name}
                   onBlur={field.onBlur}
                   onChange={(event) => field.onChange(formatTypedTime(event.target.value))}
                   placeholder={t('appointments:form.timePlaceholder')}
                   ref={field.ref}
                   value={field.value}
                 />
+                <Popover
+                  align="end"
+                  onOpenChange={setTimeListOpen}
+                  open={isTimeListOpen}
+                  trigger={
+                    <button
+                      aria-label={t('appointments:form.timeSlots')}
+                      className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-control text-text-secondary hover:text-text disabled:pointer-events-none disabled:opacity-40"
+                      disabled={isDisabled}
+                      type="button"
+                    >
+                      <Clock aria-hidden="true" className="size-4" />
+                    </button>
+                  }
+                >
+                  <ul className="grid max-h-64 w-56 grid-cols-3 gap-1 overflow-y-auto">
+                    {APPOINTMENT_TIME_OPTIONS.map((option) => (
+                      <li key={option.value}>
+                        <button
+                          aria-pressed={option.value === field.value}
+                          className="h-11 w-full rounded-[8px] text-callout text-text hover:bg-sunken aria-pressed:bg-accent-soft aria-pressed:text-accent-text"
+                          onClick={() => {
+                            field.onChange(option.value)
+                            setTimeListOpen(false)
+                          }}
+                          type="button"
+                        >
+                          {option.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </Popover>
               </div>
             )}
           />
