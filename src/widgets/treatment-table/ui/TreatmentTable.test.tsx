@@ -353,4 +353,102 @@ describe('TreatmentTable', () => {
 
     expect(onFiltersChange).toHaveBeenCalledWith(defaultTreatmentListFilters)
   })
+  describe('row actions menu', () => {
+    const singleRow = () =>
+      server.use(
+        http.get('/api/v1/clinic/treatments/', () =>
+          HttpResponse.json({ count: 1, next: null, previous: null, results: [ROW] }),
+        ),
+      )
+    const openMenu = async () =>
+      userEvent.click(
+        await screen.findByRole('button', { name: 'Amallar — Implantatsiya, 20.08.2026' }),
+      )
+
+    it('offers the four actions without opening the patient', async () => {
+      singleRow()
+      const { router } = renderTable()
+
+      await openMenu()
+
+      for (const name of [
+        'Tahrirlash',
+        "To'lov qabul qilish",
+        'Muolajani yakunlash',
+        "O'chirish",
+      ]) {
+        expect(screen.getByRole('menuitem', { name })).toBeInTheDocument()
+      }
+      expect(router.state.location.pathname).toBe('/')
+    })
+
+    it('adds a payment to what was already paid', async () => {
+      singleRow()
+      let body: unknown = null
+      server.use(
+        http.patch('/api/v1/clinic/treatments/:id/', async ({ request }) => {
+          body = await request.json()
+          return HttpResponse.json({ ...ROW, total_paid: 3_000_000, remaining: '1000000' })
+        }),
+      )
+      renderTable()
+
+      await openMenu()
+      await userEvent.click(screen.getByRole('menuitem', { name: "To'lov qabul qilish" }))
+      const amount = await screen.findByLabelText("To'lov summasi")
+      await userEvent.clear(amount)
+      await userEvent.type(amount, '200000')
+      await userEvent.click(screen.getByRole('button', { name: 'Qabul qilish' }))
+
+      await vi.waitFor(() => expect(body).toEqual({ total_paid: 3_000_000 }))
+    })
+
+    it('refuses a payment larger than the debt', async () => {
+      singleRow()
+      renderTable()
+
+      await openMenu()
+      await userEvent.click(screen.getByRole('menuitem', { name: "To'lov qabul qilish" }))
+      const amount = await screen.findByLabelText("To'lov summasi")
+      await userEvent.clear(amount)
+      await userEvent.type(amount, '5000000')
+      await userEvent.click(screen.getByRole('button', { name: 'Qabul qilish' }))
+
+      expect(await screen.findByText(/Summa qarzdan/)).toBeInTheDocument()
+    })
+
+    it('completes a treatment after confirming', async () => {
+      singleRow()
+      let body: unknown = null
+      server.use(
+        http.patch('/api/v1/clinic/treatments/:id/', async ({ request }) => {
+          body = await request.json()
+          return HttpResponse.json({ ...ROW, status: 'completed' })
+        }),
+      )
+      renderTable()
+
+      await openMenu()
+      await userEvent.click(screen.getByRole('menuitem', { name: 'Muolajani yakunlash' }))
+      await userEvent.click(await screen.findByRole('button', { name: 'Yakunlash' }))
+
+      await vi.waitFor(() => expect(body).toEqual(expect.objectContaining({ status: 'completed' })))
+    })
+
+    it('lets a doctor edit and complete, but not take payment or delete', async () => {
+      signIn('doctor')
+      singleRow()
+      renderTable()
+
+      await openMenu()
+
+      expect(screen.getByRole('menuitem', { name: 'Tahrirlash' })).not.toHaveAttribute(
+        'data-disabled',
+      )
+      expect(screen.getByRole('menuitem', { name: "To'lov qabul qilish" })).toHaveAttribute(
+        'data-disabled',
+      )
+      expect(screen.getByRole('menuitem', { name: "O'chirish" })).toHaveAttribute('data-disabled')
+    })
+  })
 })
