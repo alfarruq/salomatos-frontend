@@ -17,7 +17,8 @@
     "actionComplete": "Mark as completed",
     "empty": "No treatments yet",
     "emptyDescription": "Nothing has been added for this patient yet.",
-    "emptyAction": "Add the first treatment"
+    "emptyAction": "Add the first treatment",
+    "actionTakePayment": "Take payment"
   },
   "detail": {
     "title": "Treatment details",
@@ -112,5 +113,23 @@
     "noMatch": "No matching treatments",
     "noMatchDescription": "Try changing the filters.",
     "clear": "Clear filters"
+  },
+  "complete": {
+    "title": "Complete treatment",
+    "description": "Mark the {{type}} treatment (tooth {{tooth}}) as completed?",
+    "confirm": "Complete",
+    "success": "Treatment completed.",
+    "failed": "Could not complete the treatment. Please try again."
+  },
+  "payment": {
+    "title": "Take payment",
+    "description": "{{type}} — outstanding debt: {{debt}}",
+    "amountLabel": "Payment amount",
+    "amountRequired": "Enter an amount.",
+    "amountTooLarge": "The amount must not exceed the debt ({{debt}}).",
+    "noDebt": "This treatment has no debt.",
+    "submit": "Take payment",
+    "success": "Payment taken.",
+    "failed": "Could not save the payment. Please try again."
   }
 }

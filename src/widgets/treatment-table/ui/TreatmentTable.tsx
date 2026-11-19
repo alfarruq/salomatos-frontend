@@ -1,6 +1,6 @@
 import { type UseQueryResult, useQueries } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Stethoscope } from 'lucide-react'
+import { MoreVertical, Stethoscope } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCan } from '@/entities/session'
@@ -11,12 +11,18 @@ import {
   TreatmentStatusBadge,
   treatmentQueries,
 } from '@/entities/treatment'
+import { CompleteTreatmentDialog } from '@/features/treatment-complete'
+import { TreatmentComposer } from '@/features/treatment-composer'
+import { DeleteTreatmentDialog } from '@/features/treatment-delete'
+import { TakeTreatmentPaymentDialog } from '@/features/treatment-payment'
 import { PAGE_SIZE, type Page } from '@/shared/api/pagination'
 import { formatFixedDate } from '@/shared/lib/calendarDate'
 import { cn } from '@/shared/lib/cn'
 import { formatSom } from '@/shared/lib/money'
 import {
   Button,
+  DropdownMenu,
+  DropdownMenuItem,
   EmptyState,
   ErrorState,
   Pagination,
@@ -41,6 +47,8 @@ export interface TreatmentTableProps {
 
 /** Shown when the server had nothing to send for a cell. */
 const EMPTY = '—'
+
+type RowAction = 'edit' | 'payment' | 'complete' | 'delete'
 
 interface ScreenData {
   count: number
@@ -108,6 +116,21 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
     filters.status !== null
   // A doctor has no `billing:read` (ADR-012): the money columns are not theirs.
   const canSeeMoney = useCan('billing:read')
+  // UX only — Django decides who may write (§3). Edit and complete are clinical
+  // writes, payment is billing, and a delete wipes both, so it needs both.
+  const canWriteRecord = useCan('medical-record:write')
+  const canTakePayment = useCan('billing:write')
+  const canDelete = canWriteRecord && canTakePayment
+  const [action, setAction] = useState<{ kind: RowAction; treatment: Treatment } | null>(null)
+  // A fresh composer per opening: it seeds its form once, on mount.
+  const [composerSession, setComposerSession] = useState(0)
+  const closeAction = (open: boolean) => {
+    if (!open) setAction(null)
+  }
+  const startAction = (kind: RowAction, treatment: Treatment) => {
+    if (kind === 'edit') setComposerSession((session) => session + 1)
+    setAction({ kind, treatment })
+  }
   const navigate = useNavigate()
 
   const money = (value: number | null) =>
@@ -173,7 +196,7 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
         isEmpty={(data) => data.results.length === 0}
         loading={
           <Table>
-            <TableSkeleton columns={canSeeMoney ? 10 : 7} rows={PAGE_SIZE} />
+            <TableSkeleton columns={canSeeMoney ? 11 : 8} rows={PAGE_SIZE} />
           </Table>
         }
         query={query}
@@ -197,6 +220,9 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
                     </>
                   ) : null}
                   <TableHead>{t('treatments:table.columnStatus')}</TableHead>
+                  <TableHead align="right">
+                    <span className="sr-only">{t('treatments:table.columnActions')}</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -255,6 +281,52 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
                     <TableCell>
                       <TreatmentStatusBadge status={treatment.status} />
                     </TableCell>
+                    {/* Menu clicks bubble through the portal to the row; they must not open the patient. */}
+                    <TableCell align="right" onClick={(event) => event.stopPropagation()}>
+                      <DropdownMenu
+                        trigger={
+                          <Button
+                            aria-label={t('treatments:table.actionsMenuLabel', {
+                              type: treatment.treatmentTypeName ?? EMPTY,
+                              date:
+                                treatment.startDate === null
+                                  ? EMPTY
+                                  : formatFixedDate(treatment.startDate),
+                            })}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            <MoreVertical aria-hidden="true" className="size-4" />
+                          </Button>
+                        }
+                      >
+                        <DropdownMenuItem
+                          disabled={!canWriteRecord || treatment.patientId === null}
+                          onSelect={() => startAction('edit', treatment)}
+                        >
+                          {t('treatments:table.actionEdit')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!canTakePayment || (treatment.remaining ?? 0) <= 0}
+                          onSelect={() => startAction('payment', treatment)}
+                        >
+                          {t('treatments:table.actionTakePayment')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!canWriteRecord || treatment.status === 'completed'}
+                          onSelect={() => startAction('complete', treatment)}
+                        >
+                          {t('treatments:table.actionComplete')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!canDelete}
+                          isDestructive
+                          onSelect={() => startAction('delete', treatment)}
+                        >
+                          {t('common:action.delete')}
+                        </DropdownMenuItem>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -277,6 +349,42 @@ export function TreatmentTable({ clinicId, filters, onFiltersChange }: Treatment
           </div>
         )}
       </QueryBoundary>
+
+      {action?.kind === 'edit' && action.treatment.patientId !== null ? (
+        <TreatmentComposer
+          clinicId={clinicId}
+          initialTreatment={action.treatment}
+          key={composerSession}
+          onOpenChange={closeAction}
+          open
+          patientId={action.treatment.patientId}
+        />
+      ) : null}
+      {action?.kind === 'payment' ? (
+        <TakeTreatmentPaymentDialog
+          clinicId={clinicId}
+          onOpenChange={closeAction}
+          open
+          treatment={action.treatment}
+        />
+      ) : null}
+      {action?.kind === 'complete' ? (
+        <CompleteTreatmentDialog
+          clinicId={clinicId}
+          onOpenChange={closeAction}
+          open
+          treatment={action.treatment}
+        />
+      ) : null}
+      {action?.kind === 'delete' ? (
+        <DeleteTreatmentDialog
+          clinicId={clinicId}
+          onDeleted={() => setAction(null)}
+          onOpenChange={closeAction}
+          open
+          treatment={action.treatment}
+        />
+      ) : null}
     </div>
   )
 }
